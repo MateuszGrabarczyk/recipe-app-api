@@ -19,7 +19,7 @@ from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
-from django.conf.urls import static
+from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
