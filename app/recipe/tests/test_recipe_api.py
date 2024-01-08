@@ -27,6 +27,7 @@ from recipe.serializers import (
 
 
 RECIPES_URL = reverse('recipe:recipe-list')
+PUBLIC_RECIPES_URL = reverse('recipe:public-recipes-list')
 
 
 def detail_url(recipe_id):
@@ -71,6 +72,30 @@ class PublicRecipeAPITests(TestCase):
         res = self.client.get(RECIPES_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_retrieve_public_recipes(self):
+        """Test retriving public recipes"""
+        user1 = create_user(
+            email='other@example.com',
+            password='password123',
+        )
+        user2 = create_user(
+            email='other2@example.com',
+            password='password1234',
+        )
+
+        create_recipe(user=user1)
+        create_recipe(
+            user=user2,
+            title='Second recipe',
+        )
+        res = self.client.get(PUBLIC_RECIPES_URL)
+
+        recipes = Recipe.objects.all().order_by('-id')
+        serializer = RecipeSerializer(recipes, many=True)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, serializer.data)
 
 
 class PrivateRecipeAPITests(TestCase):
