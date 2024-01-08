@@ -12,7 +12,6 @@ from rest_framework import (
     mixins,
     status,
 )
-from rest_framework.generics import ListAPIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
@@ -98,16 +97,48 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class PublicRecipeList(ListAPIView):
-    """View for listing all recipes from all users."""
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='tags',
+                type=OpenApiTypes.STR,
+                description='Comma separated list of tag IDs to filter by',
+            ),
+            OpenApiParameter(
+                name='ingredients',
+                type=OpenApiTypes.STR,
+                description='Comma separated list \
+                    of ingredient IDs to filter by',
+            )
+        ]
+    )
+)
+class PublicRecipeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """View for listing all recipes from all users
+      with optional filtering by tags and ingredients."""
     serializer_class = serializers.RecipeSerializer
-    queryset = Recipe.objects.all().order_by('-id')
 
-    def list(self, request, *args, **kwargs):
-        """List all recipes."""
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    def _params_to_ints(self, qs):
+        """Convert a list of string IDs to a list of integers."""
+        return [int(str_id) for str_id in qs.split(',') if str_id.isdigit()]
+
+    def get_queryset(self):
+        """Extend the base queryset with filtering."""
+        queryset = Recipe.objects.all().order_by('-id')
+        tags = self.request.query_params.get('tags')
+        ingredients = self.request.query_params.get('ingredients')
+
+        if tags:
+            tag_ids = self._params_to_ints(tags)
+            queryset = queryset.filter(tags__id__in=tag_ids).distinct()
+
+        if ingredients:
+            ingredient_ids = self._params_to_ints(ingredients)
+            queryset = queryset.filter(
+                ingredients__id__in=ingredient_ids).distinct()
+
+        return queryset
 
 
 @extend_schema_view(

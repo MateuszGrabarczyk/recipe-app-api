@@ -97,6 +97,54 @@ class PublicRecipeAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
+    def test_filter_public_recipes_by_tags(self):
+        """Test filtering public recipes by tags."""
+        user1 = create_user(email='user1@example.com', password='password123')
+        user2 = create_user(email='user2@example.com', password='password123')
+
+        r1 = create_recipe(user=user1, title='Chicken curry')
+        r2 = create_recipe(user=user2, title='Chicken white curry')
+        tag1 = Tag.objects.create(user=user1, name='Vegan')
+        tag2 = Tag.objects.create(user=user2, name='Vegetarian')
+        r1.tags.add(tag1)
+        r2.tags.add(tag2)
+        r3 = create_recipe(user=user1, title='Chicken yellow curry')
+
+        params = {'tags': f'{tag1.id},{tag2.id}'}
+        res = self.client.get(PUBLIC_RECIPES_URL, params)
+
+        s1 = RecipeSerializer(r1)
+        s2 = RecipeSerializer(r2)
+        s3 = RecipeSerializer(r3)
+
+        self.assertIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+        self.assertNotIn(s3.data, res.data)
+
+    def test_filter_public_recipes_by_ingredients(self):
+        """Test filtering public recipes by ingredients"""
+        user1 = create_user(email='user1@example.com', password='password123')
+        user2 = create_user(email='user2@example.com', password='password123')
+
+        r1 = create_recipe(user=user1, title='Chicken curry')
+        r2 = create_recipe(user=user2, title='Chicken white curry')
+        i1 = Ingredient.objects.create(user=user1, name='Chicken')
+        i2 = Ingredient.objects.create(user=user2, name='Curry')
+        r1.ingredients.add(i1)
+        r2.ingredients.add(i2)
+        r3 = create_recipe(user=user1, title='Chicken yellow curry')
+
+        params = {'ingredients': f'{i1.id},{i2.id}'}
+        res = self.client.get(PUBLIC_RECIPES_URL, params)
+
+        s1 = RecipeSerializer(r1)
+        s2 = RecipeSerializer(r2)
+        s3 = RecipeSerializer(r3)
+
+        self.assertIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+        self.assertNotIn(s3.data, res.data)
+
 
 class PrivateRecipeAPITests(TestCase):
     """Test authenticated API requests."""
