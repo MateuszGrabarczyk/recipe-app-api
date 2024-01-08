@@ -12,6 +12,7 @@ from rest_framework import (
     mixins,
     status,
 )
+from rest_framework.generics import ListAPIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
@@ -95,6 +96,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PublicRecipeList(ListAPIView):
+    """View for listing all recipes from all users."""
+    serializer_class = serializers.RecipeSerializer
+    queryset = Recipe.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        """List all recipes."""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 @extend_schema_view(

@@ -20,5 +20,10 @@ router.register('ingredients', views.IngredientViewSet)
 app_name = 'recipe'
 
 urlpatterns = [
-    path('', include(router.urls))
+    path('', include(router.urls)),
+    path(
+        'public-recipes/',
+        views.PublicRecipeList.as_view(),
+        name='public-recipes-list',
+    ),
 ]
